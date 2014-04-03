@@ -5,4 +5,4 @@ ofxXMPP
 
 Issues:
 
-- If user name and password are incorrect the app dosen´t die nicely.
+- If user name and password are incorrect the app doesn´t die nicely.
