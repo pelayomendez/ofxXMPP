@@ -1234,6 +1234,9 @@ void ofxXMPP::terminateRTPSession(ofxXMPPJingleInitiation & jingle, ofxXMPPTermi
 	case ofxXMPPTerminateSuccess:
 		xmpp_stanza_set_name(reason_content,"success");
 		break;
+	case ofxXMPPTerminateUnkown:
+        xmpp_stanza_set_name(reason_content,"unknown");
+        break;
 	}
 
 	xmpp_stanza_add_child(iq,jingle_stanza);
