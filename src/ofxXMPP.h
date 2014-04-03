@@ -130,10 +130,13 @@ public:
 	void setStatus(const string & status);
 	void setCapabilities(const string & capabilities);
 
+    void joinRoom(const string & roomName, const bool & supportMultiUserChat = true);
+    
 	void connect(const string & host, const string & jid, const string & pass);
 	void stop();
 
-	void sendMessage(const string & to, const string & message);
+	// Types: chat -> private message / groupchat -> group message when in a room
+	void sendMessage(const string & to, const string & message, const string & type = "chat");
 	vector<ofxXMPPUser> getFriends();
 
 	ofxXMPPConnectionState getConnectionState();
@@ -264,6 +267,7 @@ private:
 
     ofxXMPPConnectionState connectionState;
     string userName;
+    string hostName;
 
     JingleState jingleState;
     //JingleFileTransferState jingleFileTransferState;

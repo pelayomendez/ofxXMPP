@@ -535,10 +535,38 @@ void ofxXMPP::setCapabilities(const string & capabilities){
 	}
 }
 
-void ofxXMPP::sendMessage(const string & to, const string & message){
+void ofxXMPP::joinRoom(const string & roomName, const bool & supportMultiUserChat) {
+    
+    // TODO Event listener.
+    
+    /*
+     <presence to='testroom@conference.localhost/Joe' xmlns='jabber:client'>
+     <x xmlns='http://jabber.org/protocol/muc'/>
+     </presence>
+     */
+    
+    xmpp_stanza_t* pres = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(pres, "presence");
+    
+    string to = roomName + "@" + "conference." + hostName + "/" + userName;
+    xmpp_stanza_set_attribute(pres,"to",to.c_str());
+    xmpp_stanza_set_attribute(pres,"xmlns","jabber:client");
+    
+    xmpp_stanza_t * multiuser = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(multiuser, "x");
+    xmpp_stanza_set_attribute(multiuser,"xmlns","http://jabber.org/protocol/muc");
+    if(supportMultiUserChat) xmpp_stanza_add_child(pres,multiuser);
+    
+    xmpp_send(conn, pres);
+    xmpp_stanza_release(multiuser);
+    xmpp_stanza_release(pres);
+    
+}
+
+void ofxXMPP::sendMessage(const string & to, const string & message, const string & type){
 	xmpp_stanza_t * msg = xmpp_stanza_new(ctx);
 	xmpp_stanza_set_name(msg,"message");
-	xmpp_stanza_set_attribute(msg,"type","chat");
+	xmpp_stanza_set_attribute(msg,"type",type.c_str());
 	xmpp_stanza_set_attribute(msg,"to",to.c_str());
 
 	xmpp_stanza_t * msg_body = xmpp_stanza_new(ctx);
@@ -651,6 +679,7 @@ void ofxXMPP::connect(const string & host, const string & jid, const string & pa
 
     connectionState = ofxXMPPConnecting;
     userName = jid;
+    hostName = host;
 
     ofAddListener(ofEvents().update,this,&ofxXMPP::update);
 
