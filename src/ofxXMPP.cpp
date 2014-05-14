@@ -563,6 +563,21 @@ void ofxXMPP::joinRoom(const string & roomName, const bool & supportMultiUserCha
     
 }
 
+void ofxXMPP::leaveRoom(const string & roomName) {
+    
+    xmpp_stanza_t* pres = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(pres, "presence");
+    xmpp_stanza_set_attribute(pres,"type","unavailable");
+    
+    string to = roomName + "@" + "conference." + hostName + "/" + userName;
+    xmpp_stanza_set_attribute(pres,"to",to.c_str());
+    xmpp_stanza_set_attribute(pres,"xmlns","jabber:client");
+    
+    xmpp_send(conn, pres);
+    xmpp_stanza_release(pres);
+    
+}
+
 void ofxXMPP::sendMessage(const string & to, const string & message, const string & type){
 	xmpp_stanza_t * msg = xmpp_stanza_new(ctx);
 	xmpp_stanza_set_name(msg,"message");
@@ -684,6 +699,18 @@ void ofxXMPP::connect(const string & host, const string & jid, const string & pa
     ofAddListener(ofEvents().update,this,&ofxXMPP::update);
 
 }
+
+void ofxXMPP::disconnectUser() {
+    
+    xmpp_stanza_t* pres = xmpp_stanza_new(ctx);
+	xmpp_stanza_set_name(pres, "presence");
+    xmpp_stanza_set_attribute(pres,"type","unavailable");
+    
+    xmpp_send(conn, pres);
+    xmpp_stanza_release(pres);
+    
+}
+
 
 vector<ofxXMPPUser> ofxXMPP::getFriends(){
 	vector<ofxXMPPUser> friendsVector;

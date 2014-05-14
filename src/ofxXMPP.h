@@ -131,8 +131,10 @@ public:
 	void setCapabilities(const string & capabilities);
 
     void joinRoom(const string & roomName, const bool & supportMultiUserChat = true);
+    void leaveRoom(const string & roomName);
     
 	void connect(const string & host, const string & jid, const string & pass);
+    void disconnectUser();
 	void stop();
 
 	// Types: chat -> private message / groupchat -> group message when in a room
