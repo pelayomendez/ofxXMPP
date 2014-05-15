@@ -490,7 +490,8 @@ ofxXMPP::ofxXMPP()
 }
 
 ofxXMPP::~ofxXMPP() {
-	//xmpp_shutdown();
+	ofRemoveListener(ofEvents().update,this,&ofxXMPP::update);
+	stop();
 }
 
 string ofxXMPP::toString(ofxXMPPShowState showState){
@@ -722,6 +723,21 @@ vector<ofxXMPPUser> ofxXMPP::getFriends(){
 	return friendsVector;
 }
 
+vector<ofxXMPPUser> ofxXMPP::getFriendsWithCapability(const string & capability){
+	vector<ofxXMPPUser> friendsVector;
+	lock();
+	for(map<string,ofxXMPPUser>::iterator it=friends.begin();it!=friends.end();it++){
+		for(size_t i=0;i<it->second.capabilities.size();i++){
+			if(it->second.capabilities[i]==capability){
+				friendsVector.push_back(it->second);
+				break;
+			}
+		}
+	}
+	unlock();
+	return friendsVector;
+}
+
 void ofxXMPP::update(ofEventArgs & args){
 	lock();
 	queue<ofxXMPPMessage> queueCopy = messageQueue;
@@ -918,8 +934,8 @@ void ofxXMPP::ackRing(const string & to, const string & sid){
 }
 
 void ofxXMPP::stop(){
-	xmpp_stop(ctx);
 	xmpp_conn_release(conn);
+	xmpp_stop(ctx);
 	xmpp_ctx_free(ctx);
 	ctx = NULL;
 	conn = NULL;
