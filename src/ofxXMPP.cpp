@@ -361,6 +361,8 @@ void ofxXMPP::fileInitiationAccepted(xmpp_stanza_t * iq){
 int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
 			     xmpp_stanza_t * const stanza,
 			     void * const userdata){
+    
+
 	ofxXMPP * xmpp = (ofxXMPP *)userdata;
 
 	const char * iq_type = xmpp_stanza_get_type(stanza);
@@ -462,7 +464,29 @@ int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
 			}
 		}
 	}else{
-		if( iq_type && string(iq_type)=="result" && xmpp->jingleState==InitiatingRTP){
+        
+        xmpp_stanza_t * query = xmpp_stanza_get_child_by_name(stanza,"query");
+        if(query) { // Receiving Info:
+            const char * query_xmlns_cstr = xmpp_stanza_get_attribute(query,"xmlns");
+            if(string(query_xmlns_cstr) =="http://jabber.org/protocol/disco#info") { // Room Info
+                ofLog(OF_LOG_NOTICE) << "Room Info:" << endl;
+                xmpp_stanza_t * identity = xmpp_stanza_get_child_by_name(query,"identity");
+                const char * category = xmpp_stanza_get_attribute(identity,"category");
+                cout << "category: "<< string(category) << endl;
+                const char * name = xmpp_stanza_get_attribute(identity,"name");
+                cout << "name: "<< string(name) << endl;
+                const char * type = xmpp_stanza_get_attribute(identity,"type");
+                cout << "type: "<< string(type) << endl;
+                xmpp_stanza_t * features = xmpp_stanza_get_children(query);
+                while (features != NULL) {
+                    if (strcmp(xmpp_stanza_get_name(features), "feature") == 0) {
+                        char *code = xmpp_stanza_get_attribute(features, "var");
+                        cout << "var: "<< string(code) << endl;
+                    }
+                    features= xmpp_stanza_get_next(features);
+                }
+            }
+        } else if( iq_type && string(iq_type)=="result" && xmpp->jingleState==InitiatingRTP){
 			xmpp->jingleState = InitiationACKd;
 		}else if( iq_type && string(iq_type)=="result" && xmpp->jingleState==AcceptingRTP){
 			xmpp->jingleState = SessionAccepted;
@@ -473,7 +497,8 @@ int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
 			xmpp->jingleFileTransferState = FileSessionAccepted;
 		}*/
 	}
-
+    
+    
 
 	cout << xmpp_conn_get_bound_jid(xmpp->conn) << " to state " << toString(xmpp->jingleState) << endl;
 	//cout << xmpp_conn_get_bound_jid(xmpp->conn) << " to state " << toString(xmpp->jingleFileTransferState) << endl;
@@ -561,6 +586,36 @@ void ofxXMPP::joinRoom(const string & roomName, const bool & supportMultiUserCha
     xmpp_send(conn, pres);
     xmpp_stanza_release(multiuser);
     xmpp_stanza_release(pres);
+    
+}
+
+void ofxXMPP::requestRoomInfo(const string & roomName) {
+    
+    /*
+    <iq from='hag66@shakespeare.lit/pda'
+    id='ik3vs715'
+    to='coven@chat.shakespeare.lit'
+    type='get'>
+    <query xmlns='http://jabber.org/protocol/disco#info'/>
+    </iq>
+     */
+    
+    xmpp_stanza_t* iq = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(iq, "iq");
+    string from = userName;
+    xmpp_stanza_set_attribute(iq,"from",from.c_str());
+    string to = roomName + "@" + "conference." + hostName;
+    xmpp_stanza_set_attribute(iq,"to",to.c_str());
+    xmpp_stanza_set_type(iq,"get");
+    
+    xmpp_stanza_t * query = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(query, "query");
+    xmpp_stanza_set_attribute(query,"xmlns","http://jabber.org/protocol/disco#info");
+    xmpp_stanza_add_child(iq,query);
+  
+    xmpp_send(conn, iq);
+    xmpp_stanza_release(query);
+    xmpp_stanza_release(iq);
     
 }
 

@@ -147,6 +147,7 @@ public:
 	void setCapabilities(const string & capabilities);
 
     void joinRoom(const string & roomName, const bool & supportMultiUserChat = true);
+    void requestRoomInfo(const string & roomName);
     void leaveRoom(const string & roomName);
     
 	/// starts a connection to an XMPP server, passing the host to connect to, the username or jid
