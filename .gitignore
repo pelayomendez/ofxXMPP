@@ -3,3 +3,33 @@ example/obj/**
 example/bin/*
 !example/bin/data
 example/bin/data/settings.xml
+
+# Some general ignore patterns
+
+*/bin/*
+!*/bin/data/
+# for bin folder in root
+/bin/*
+!/bin/data/
+
+build/
+obj/
+*.o
+Debug*/
+Release*/
+*.mode*
+*.app/
+*.pyc
+.svn/
+
+# IDE-specific ignore patterns (e.g. user-specific files)
+
+#XCode
+*.pbxuser
+*.perspective
+*.perspectivev3
+*.mode1v3
+*.mode2v3
+#XCode 4
+xcuserdata
+*.xcworkspace
