@@ -563,11 +563,13 @@ void ofxXMPP::setCapabilities(const string & capabilities){
 
 void ofxXMPP::joinRoom(const string & roomName, const bool & supportMultiUserChat, const int & historySize) {
     
-    // TODO Event listener.
+    // TODO Rooms Event Listeners.
     
     /*
      <presence to='testroom@conference.localhost/Joe' xmlns='jabber:client'>
-     <x xmlns='http://jabber.org/protocol/muc'/>
+     <x xmlns='http://jabber.org/protocol/muc'>
+        <history maxstanzas='20'/>
+     </x>
      </presence>
      */
     
@@ -578,18 +580,24 @@ void ofxXMPP::joinRoom(const string & roomName, const bool & supportMultiUserCha
     xmpp_stanza_set_attribute(pres,"to",to.c_str());
     xmpp_stanza_set_attribute(pres,"xmlns","jabber:client");
     
-    xmpp_stanza_t * multiuser = xmpp_stanza_new(ctx);
-    xmpp_stanza_set_name(multiuser, "x");
-    xmpp_stanza_set_attribute(multiuser,"xmlns","http://jabber.org/protocol/muc");
-    if(supportMultiUserChat) xmpp_stanza_add_child(pres,multiuser);
-    
-    xmpp_stanza_t * history = xmpp_stanza_new(ctx);
-    xmpp_stanza_set_name(history, "history");
-    xmpp_stanza_set_attribute(history,"maxstanzas",ofToString(historySize).c_str());
-    xmpp_stanza_add_child(pres,history);
+    if(supportMultiUserChat) {
+        
+        xmpp_stanza_t * multiuser = xmpp_stanza_new(ctx);
+        xmpp_stanza_set_name(multiuser, "x");
+        xmpp_stanza_set_attribute(multiuser,"xmlns","http://jabber.org/protocol/muc");
+        xmpp_stanza_add_child(pres,multiuser);
+        
+        xmpp_stanza_t * history = xmpp_stanza_new(ctx);
+        xmpp_stanza_set_name(history, "history");
+        xmpp_stanza_set_attribute(history,"maxstanzas",ofToString(historySize).c_str());
+        xmpp_stanza_add_child(multiuser,history);
+        
+        xmpp_stanza_release(history);
+        xmpp_stanza_release(multiuser);
+        
+    }
     
     xmpp_send(conn, pres);
-    xmpp_stanza_release(multiuser);
     xmpp_stanza_release(pres);
     
 }
