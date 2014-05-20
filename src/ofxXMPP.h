@@ -146,7 +146,7 @@ public:
 	/// types
 	void setCapabilities(const string & capabilities);
 
-    void joinRoom(const string & roomName, const bool & supportMultiUserChat = true);
+    void joinRoom(const string & roomName, const bool & supportMultiUserChat = true, const int & historySize = 20);
     void requestRoomInfo(const string & roomName);
     void leaveRoom(const string & roomName);
     
