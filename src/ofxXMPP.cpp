@@ -79,8 +79,8 @@ void ofxXMPP::conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t sta
     }
     else {
         fprintf(stderr, "DEBUG: disconnected\n");
-        xmpp->stop();
         xmpp->connectionState = ofxXMPPDisconnected;
+        xmpp->stop();
     }
 
     ofNotifyEvent(xmpp->connectionStateChanged,xmpp->connectionState,xmpp);
@@ -1002,20 +1002,27 @@ void ofxXMPP::ackRing(const string & to, const string & sid){
 }
 
 void ofxXMPP::stop(){
-
-	if(ofxXMPPConnected) { // TODO This avoid crashes without checking ofxXMPPConnected when conection fails but is conn propertly released?
-                          // Should wait for veent loop to finish before calling this?
+    
+	if((getConnectionState() == ofxXMPPConnected || getConnectionState() == ofxXMPPConnecting) && conn != NULL) {
+        // TODO This avoid crashes without checking ofxXMPPConnected when connection fails but is conn propertly released?
+        // Should wait for veent loop to finish before calling this?
+        fprintf(stderr, "DEBUG: releasing conn\n");
         xmpp_disconnect(conn);
         xmpp_conn_release(conn);
+       
     }
-    
-    xmpp_stop(ctx);
-	xmpp_ctx_free(ctx);
-    
+
+    if(ctx != NULL) {
+        fprintf(stderr, "DEBUG: stop ctx\n");
+        xmpp_stop(ctx);
+        fprintf(stderr, "DEBUG: release ctx\n");
+        xmpp_ctx_free(ctx); // Still crashing here with thread
+    }
+
     xmpp_shutdown();
     
-	ctx = NULL;
-	conn = NULL;
+    conn = NULL;
+    ctx = NULL;
     
 }
 
