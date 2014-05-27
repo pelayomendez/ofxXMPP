@@ -1002,11 +1002,21 @@ void ofxXMPP::ackRing(const string & to, const string & sid){
 }
 
 void ofxXMPP::stop(){
-	xmpp_conn_release(conn);
-	xmpp_stop(ctx);
+
+	if(ofxXMPPConnected) { // TODO This avoid crashes without checking ofxXMPPConnected when conection fails but is conn propertly released?
+                          // Should wait for veent loop to finish before calling this?
+        xmpp_disconnect(conn);
+        xmpp_conn_release(conn);
+    }
+    
+    xmpp_stop(ctx);
 	xmpp_ctx_free(ctx);
+    
+    xmpp_shutdown();
+    
 	ctx = NULL;
 	conn = NULL;
+    
 }
 
 void ofxXMPP::initiateFileTransfer(const string & to, ofxXMPPJingleFileInitiation & jingleFileInitiation){

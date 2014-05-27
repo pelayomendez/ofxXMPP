@@ -149,7 +149,7 @@ public:
     void joinRoom(const string & roomName, const bool & supportMultiUserChat = true, const int & historySize = 20);
     void requestRoomInfo(const string & roomName);
     void leaveRoom(const string & roomName);
-    
+
 	/// starts a connection to an XMPP server, passing the host to connect to, the username or jid
 	/// and the password
 	void connect(const string & host, const string & jid, const string & pass);
