@@ -167,6 +167,7 @@ int ofxXMPP::message_handler(xmpp_conn_t * const conn,
 	message.from = xmpp_stanza_get_attribute(stanza,"from");
 	message.type = xmpp_stanza_get_attribute(stanza,"type");
 	message.body = getTextFromStanzasChild("body",stanza);
+    
 	if(message.body!="" && message.type!="error"){
 		xmpp->lock();
 		xmpp->messageQueue.push(message);
@@ -362,10 +363,19 @@ int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
 			     xmpp_stanza_t * const stanza,
 			     void * const userdata){
     
-
-	ofxXMPP * xmpp = (ofxXMPP *)userdata;
-
-	const char * iq_type = xmpp_stanza_get_type(stanza);
+    ofxXMPP * xmpp = (ofxXMPP *)userdata;
+    const char * iq_type = xmpp_stanza_get_type(stanza);
+    
+    xmpp_stanza_t * ping = xmpp_stanza_get_child_by_name(stanza,"ping");
+    if(ping) {
+        const char * to = xmpp_stanza_get_attribute(stanza,"from");
+        const char * from = xmpp_stanza_get_attribute(stanza,"to");
+        const char * id = xmpp_stanza_get_attribute(stanza,"id");
+        ofLogVerbose() << "ping " << id;
+        xmpp->sendPong(ofToString(to), ofToString(from), ofToString(id));
+        return 1;
+    }
+        
 	xmpp_stanza_t * jingle = xmpp_stanza_get_child_by_name(stanza,"jingle");
 
 	if(iq_type && string(iq_type)=="error" && jingle){
@@ -644,6 +654,31 @@ void ofxXMPP::leaveRoom(const string & roomName) {
     
     xmpp_send(conn, pres);
     xmpp_stanza_release(pres);
+    
+}
+
+void ofxXMPP::sendPong(const string & to, const string & from, const string & pingid) {
+    
+    // <iq from='juliet@capulet.lit/balcony' to='capulet.lit' id='s2c1' type='result'/>
+    
+    xmpp_stanza_t* iq_pong = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(iq_pong, "iq");
+    xmpp_stanza_set_attribute(iq_pong,"from", from.c_str());
+    xmpp_stanza_set_attribute(iq_pong,"to",to.c_str());
+	xmpp_stanza_set_attribute(iq_pong,"id", pingid.c_str());
+    xmpp_stanza_set_attribute(iq_pong,"type","result");
+    
+    /*
+    char *buf;
+    size_t len;
+    int rc = xmpp_stanza_to_text(iq_pong, &buf, &len);
+    printf("%s", buf);
+    */
+    
+    xmpp_send(conn, iq_pong);
+    xmpp_stanza_release(iq_pong);
+    
+    ofLogVerbose() << "pong " << pingid.c_str();
     
 }
 
@@ -1001,6 +1036,8 @@ void ofxXMPP::ackRing(const string & to, const string & sid){
 
 void ofxXMPP::stop(){
     
+    cout << "stop" << endl;
+    
     ofRemoveListener(ofEvents().update,this,&ofxXMPP::update);
     
     if(ctx != NULL) {
@@ -1015,7 +1052,8 @@ void ofxXMPP::stop(){
     
     // TODO Checking ofxXMPPConnected when connection fails avoids crash stopping after been disconnected / connection failure
     if(getConnectionState() == ofxXMPPConnected && conn != NULL) {
-        //xmpp_disconnect(conn);
+        ofLogVerbose() << "DEBUG: disconecting conn";
+        xmpp_disconnect(conn);
         ofLogVerbose() << "DEBUG: releasing conn";
         xmpp_conn_release(conn);
         conn = NULL;

@@ -150,6 +150,14 @@ public:
     void joinRoom(const string & roomName, const bool & supportMultiUserChat = true, const int & historySize = 20);
     void requestRoomInfo(const string & roomName);
     void leaveRoom(const string & roomName);
+    
+    // As specified in XMPP Core [1], the XML streams used in XMPP are bound to TCP. Unfortunately,
+    // TCP connections can go down without the application (XMPP) layer knowing about it.
+    // The traditional approach to solving this issue has been to periodically send so-called "whitespace pings"
+    // pings can be sent from a client to a server, from one server to another, or end-to-end.
+    // http://xmpp.org/extensions/xep-0199.html#s2c
+    void sendPing(); // TODO
+    void sendPong(const string & to, const string & from, const string & pingid);
 
 	/// starts a connection to an XMPP server, passing the host to connect to, the username or jid
 	/// and the password
