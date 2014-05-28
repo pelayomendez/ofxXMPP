@@ -79,7 +79,7 @@ void ofxXMPP::conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t sta
     }
     else {
         fprintf(stderr, "DEBUG: disconnected\n");
-        xmpp->connectionState = ofxXMPPDisconnected;
+        xmpp->connectionState = ofxXMPPDisconnecting;
         xmpp->stop();
     }
 
@@ -507,6 +507,7 @@ int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
 
 ofxXMPP::ofxXMPP()
 :conn(NULL)
+,initialized(false)
 ,currentShow(ofxXMPPShowAvailable)
 ,connectionState(ofxXMPPDisconnected)
 ,jingleState(Disconnected)
@@ -515,7 +516,6 @@ ofxXMPP::ofxXMPP()
 }
 
 ofxXMPP::~ofxXMPP() {
-	ofRemoveListener(ofEvents().update,this,&ofxXMPP::update);
 	stop();
 }
 
@@ -721,7 +721,6 @@ void ofxXMPP::sendPressence(){
 
 void ofxXMPP::connect(const string & host, const string & jid, const string & pass){
 
-	static bool initialized = false;
 	if(!initialized){
 		xmpp_initialize();
 
@@ -729,7 +728,7 @@ void ofxXMPP::connect(const string & host, const string & jid, const string & pa
 		xmpp_log_t * log = NULL;
 	    ctx = xmpp_ctx_new(NULL, log);
 
-		startThread();
+		startThread(true,false);
 		initialized = true;
 	}
 
@@ -769,18 +768,6 @@ void ofxXMPP::connect(const string & host, const string & jid, const string & pa
 
 }
 
-void ofxXMPP::disconnectUser() {
-    
-    xmpp_stanza_t* pres = xmpp_stanza_new(ctx);
-	xmpp_stanza_set_name(pres, "presence");
-    xmpp_stanza_set_attribute(pres,"type","unavailable");
-    
-    xmpp_send(conn, pres);
-    xmpp_stanza_release(pres);
-    
-}
-
-
 vector<ofxXMPPUser> ofxXMPP::getFriends(){
 	vector<ofxXMPPUser> friendsVector;
 	lock();
@@ -804,6 +791,17 @@ vector<ofxXMPPUser> ofxXMPP::getFriendsWithCapability(const string & capability)
 	}
 	unlock();
 	return friendsVector;
+}
+
+void ofxXMPP::disconnectUser() {
+    
+    xmpp_stanza_t* pres = xmpp_stanza_new(ctx);
+	xmpp_stanza_set_name(pres, "presence");
+    xmpp_stanza_set_attribute(pres,"type","unavailable");
+    
+    xmpp_send(conn, pres);
+    xmpp_stanza_release(pres);
+    
 }
 
 void ofxXMPP::update(ofEventArgs & args){
@@ -1003,27 +1001,37 @@ void ofxXMPP::ackRing(const string & to, const string & sid){
 
 void ofxXMPP::stop(){
     
-	if((getConnectionState() == ofxXMPPConnected || getConnectionState() == ofxXMPPConnecting) && conn != NULL) {
-        // TODO This avoid crashes without checking ofxXMPPConnected when connection fails but is conn propertly released?
-        // Should wait for veent loop to finish before calling this?
-        fprintf(stderr, "DEBUG: releasing conn\n");
-        xmpp_disconnect(conn);
+    ofRemoveListener(ofEvents().update,this,&ofxXMPP::update);
+    
+    if(ctx != NULL) {
+        ofLogVerbose() << "DEBUG: stop ctx";
+        xmpp_stop(ctx);
+
+    }
+    if(threadRunning) {
+        ofLogVerbose() << "DEBUG: stopping thread";
+        waitForThread(true);
+    }
+    
+    // TODO Checking ofxXMPPConnected when connection fails avoids crash stopping after been disconnected / connection failure
+    if(getConnectionState() == ofxXMPPConnected && conn != NULL) {
+        //xmpp_disconnect(conn);
+        ofLogVerbose() << "DEBUG: releasing conn";
         xmpp_conn_release(conn);
-       
+        conn = NULL;
     }
 
     if(ctx != NULL) {
-        fprintf(stderr, "DEBUG: stop ctx\n");
-        xmpp_stop(ctx);
-        fprintf(stderr, "DEBUG: release ctx\n");
-        xmpp_ctx_free(ctx); // Still crashing here with thread
+        ofLogVerbose() << "DEBUG: releasing ctx";
+        xmpp_ctx_free(ctx);
+        ctx = NULL;
     }
 
     xmpp_shutdown();
+    initialized = false;
     
-    conn = NULL;
-    ctx = NULL;
-    
+    connectionState = ofxXMPPDisconnected;
+
 }
 
 void ofxXMPP::initiateFileTransfer(const string & to, ofxXMPPJingleFileInitiation & jingleFileInitiation){
@@ -1299,7 +1307,11 @@ void ofxXMPP::ack(const ofxXMPPJingleHash & hash){
 }
 
 void ofxXMPP::threadedFunction(){
-	xmpp_run(ctx);
+    
+    if(isThreadRunning()) {
+        xmpp_run(ctx);
+    }
+
 }
 
 void ofxXMPP::acceptRTPSession(const string & to, ofxXMPPJingleInitiation & jingleInitiation){

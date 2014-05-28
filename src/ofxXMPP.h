@@ -34,7 +34,8 @@ enum ofxXMPPShowState{
 enum ofxXMPPConnectionState{
 	ofxXMPPConnected,
 	ofxXMPPConnecting,
-	ofxXMPPDisconnected
+	ofxXMPPDisconnected,
+    ofxXMPPDisconnecting
 };
 
 enum ofxXMPPTerminateReason{
@@ -154,7 +155,7 @@ public:
 	/// and the password
 	void connect(const string & host, const string & jid, const string & pass);
     void disconnectUser();
-
+    
 	/// stops the connection
 	void stop();
 
@@ -330,6 +331,8 @@ private:
     static string toString(JingleState state);
     //static string toString(JingleFileTransferState state);
     void addTextChild(xmpp_stanza_t * stanza, const string & textstr);
+    
+    bool initialized;
 
 };
 
