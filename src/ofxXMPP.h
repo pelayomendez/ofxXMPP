@@ -156,7 +156,12 @@ public:
     // The traditional approach to solving this issue has been to periodically send so-called "whitespace pings"
     // pings can be sent from a client to a server, from one server to another, or end-to-end.
     // http://xmpp.org/extensions/xep-0199.html#s2c
-    void sendPing(); // TODO
+    enum ofxXMPPPingState{
+        ofxXMPPPingDisconnected,
+        ofxXMPPPingStateWaiting
+    };
+    ofxXMPPPingState pingState;
+    void sendPing();
     void sendPong(const string & to, const string & from, const string & pingid);
 
 	/// starts a connection to an XMPP server, passing the host to connect to, the username or jid
