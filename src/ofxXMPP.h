@@ -61,6 +61,12 @@ struct ofxXMPPMessage{
 	string body;
 };
 
+struct ofxXMPPPing{
+	string from;
+	string to;
+	string id;
+};
+
 struct ofxXMPPPayload{
 	int id;  //typically 96 - 127
 	string name;
@@ -162,6 +168,8 @@ public:
     };
     ofxXMPPPingState pingState;
     void sendPing();
+    ofEvent<ofxXMPPPing> newPing;
+    ofEvent<ofxXMPPPing> newPong;
     void sendPong(const string & to, const string & from, const string & pingid);
 
 	/// starts a connection to an XMPP server, passing the host to connect to, the username or jid

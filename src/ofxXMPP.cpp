@@ -368,11 +368,13 @@ int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
     
     xmpp_stanza_t * ping = xmpp_stanza_get_child_by_name(stanza,"ping");
     if(ping && string(iq_type) == "get") {
-        const char * to = xmpp_stanza_get_attribute(stanza,"from");
-        const char * from = xmpp_stanza_get_attribute(stanza,"to");
-        const char * id = xmpp_stanza_get_attribute(stanza,"id");
-        ofLogVerbose() << "ping in " << id;
-        xmpp->sendPong(ofToString(to), ofToString(from), ofToString(id));
+        ofxXMPPPing p;
+        p.to = xmpp_stanza_get_attribute(stanza,"to");
+        p.from = xmpp_stanza_get_attribute(stanza,"from");
+        p.id = xmpp_stanza_get_attribute(stanza,"id");
+        ofLogVerbose() << "ping in " << p.id;
+        ofNotifyEvent(xmpp->newPing,p,xmpp);
+        xmpp->sendPong(p.from, p.to, p.id);
         return 1;
     } else if (ping && string(iq_type) == "error") {
         ofLogWarning() << "Ping not supported by server";
@@ -380,7 +382,6 @@ int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
     }
         
 	xmpp_stanza_t * jingle = xmpp_stanza_get_child_by_name(stanza,"jingle");
-
 	if(iq_type && string(iq_type)=="error" && jingle){
 		xmpp->jingleState = Disconnected;
 	}else if(jingle){
@@ -504,8 +505,12 @@ int ofxXMPP::iq_handler(xmpp_conn_t * const conn,
 		}else if( iq_type && string(iq_type)=="result" && xmpp->jingleState==AcceptingRTP){
 			xmpp->jingleState = SessionAccepted;
 		} else if(iq_type && string(iq_type)=="result" && xmpp->pingState == ofxXMPPPingStateWaiting) {
-            const char * id = xmpp_stanza_get_attribute(stanza,"id");
-            ofLogVerbose() << "pong in " << id;
+            ofxXMPPPing p;
+            p.to = xmpp_stanza_get_attribute(stanza,"to");
+            p.from = xmpp_stanza_get_attribute(stanza,"from");
+            p.id = xmpp_stanza_get_attribute(stanza,"id");
+            ofNotifyEvent(xmpp->newPong,p,xmpp);
+            ofLogVerbose() << "pong in " << p.id;
             xmpp->pingState == ofxXMPPPingDisconnected;
         }
         
@@ -635,8 +640,7 @@ void ofxXMPP::requestRoomInfo(const string & roomName) {
     
     xmpp_stanza_t* iq = xmpp_stanza_new(ctx);
     xmpp_stanza_set_name(iq, "iq");
-    string from = userName;
-    xmpp_stanza_set_attribute(iq,"from",from.c_str());
+    xmpp_stanza_set_attribute(iq,"from",xmpp_conn_get_bound_jid(conn));
     string to = roomName + "@" + "conference." + hostName;
     xmpp_stanza_set_attribute(iq,"to",to.c_str());
     xmpp_stanza_set_type(iq,"get");
@@ -675,7 +679,7 @@ void ofxXMPP::sendPing() {
     
     xmpp_stanza_t* iq_ping = xmpp_stanza_new(ctx);
     xmpp_stanza_set_name(iq_ping, "iq");
-    xmpp_stanza_set_attribute(iq_ping,"from", userName.c_str());
+    xmpp_stanza_set_attribute(iq_ping,"from", xmpp_conn_get_bound_jid(conn));
     xmpp_stanza_set_attribute(iq_ping,"to", hostName.c_str());
     string pingid = "of"+ofGetTimestampString();
 	xmpp_stanza_set_attribute(iq_ping,"id", pingid.c_str());
